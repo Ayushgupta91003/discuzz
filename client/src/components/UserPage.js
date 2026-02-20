@@ -8,7 +8,7 @@ import LoadMoreButton from './LoadMoreButton';
 import ErrorPage from './ErrorPage';
 import LoadingSpinner from './LoadingSpinner';
 import getErrorMsg from '../utils/getErrorMsg';
-import getCircularAvatar from '../utils/cloudinaryTransform';
+import { getCircularAvatar } from '../utils/cloudinaryTransform';
 
 import {
   Paper,
