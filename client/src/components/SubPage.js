@@ -19,14 +19,16 @@ import LoadingSpinner from './LoadingSpinner';
 import getErrorMsg from '../utils/getErrorMsg';
 
 import {
-  Container,
   Paper,
   Typography,
   Button,
   Link,
   TextField,
+  Chip,
+  Divider,
 } from '@material-ui/core';
 import { useSubPageStyles } from '../styles/muiStyles';
+import { useTheme } from '@material-ui/core/styles';
 import CakeIcon from '@material-ui/icons/Cake';
 import PersonIcon from '@material-ui/icons/Person';
 import CheckIcon from '@material-ui/icons/Check';
@@ -34,9 +36,11 @@ import GroupIcon from '@material-ui/icons/Group';
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
 import PostAddIcon from '@material-ui/icons/PostAdd';
+import ForumIcon from '@material-ui/icons/Forum';
 
 const SubPage = () => {
   const classes = useSubPageStyles();
+  const theme = useTheme();
   const { sub } = useParams();
   const dispatch = useDispatch();
   const { user, subPage } = useSelector((state) => state);
@@ -63,58 +67,37 @@ const SubPage = () => {
   }, [sub]);
 
   useEffect(() => {
-    if (subPage) {
-      setDescInput(subPage.subDetails.description);
-    }
+    if (subPage) setDescInput(subPage.subDetails.description);
   }, [subPage]);
 
   if (pageError) {
     return (
-      <Container disableGutters>
-        <Paper variant="outlined" className={classes.mainPaper}>
-          <ErrorPage errorMsg={pageError} />
-        </Paper>
-      </Container>
+      <Paper variant="outlined" className={classes.mainPaper}>
+        <ErrorPage errorMsg={pageError} />
+      </Paper>
     );
   }
 
   if (!subPage || pageLoading) {
     return (
-      <Container disableGutters>
-        <Paper variant="outlined" className={classes.mainPaper}>
-          <LoadingSpinner text={'Fetching sub data...'} />
-        </Paper>
-      </Container>
+      <Paper variant="outlined" className={classes.mainPaper}>
+        <LoadingSpinner text="Fetching community..." />
+      </Paper>
     );
   }
 
-  const {
-    subredditName,
-    subscribedBy,
-    subscriberCount,
-    description,
-    admin,
-    createdAt,
-    id,
-  } = subPage.subDetails;
+  const { subredditName, subscribedBy, subscriberCount, description, admin, createdAt, id } =
+    subPage.subDetails;
 
   const isSubscribed = user && subscribedBy.includes(user.id);
 
   const handleSubJoin = async () => {
     try {
-      let updatedSubscribedBy = [];
-
-      if (isSubscribed) {
-        updatedSubscribedBy = subscribedBy.filter((s) => s !== user.id);
-      } else {
-        updatedSubscribedBy = [...subscribedBy, user.id];
-      }
+      const updatedSubscribedBy = isSubscribed
+        ? subscribedBy.filter((s) => s !== user.id)
+        : [...subscribedBy, user.id];
       await dispatch(toggleSubscribe(id, updatedSubscribedBy));
-
-      let message = isSubscribed
-        ? `Unsubscribed from r/${subredditName}`
-        : `Subscribed to r/${subredditName}!`;
-      dispatch(notify(message, 'success'));
+      dispatch(notify(isSubscribed ? `Left r/${subredditName}` : `Joined r/${subredditName}!`, 'success'));
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
     }
@@ -124,9 +107,7 @@ const SubPage = () => {
     try {
       await dispatch(editDescription(id, descInput));
       setEditOpen(false);
-      dispatch(
-        notify(`Updated description of your sub: r/${subredditName}`, 'success')
-      );
+      dispatch(notify('Description updated!', 'success'));
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
     }
@@ -138,10 +119,7 @@ const SubPage = () => {
       await dispatch(fetchSub(sub, newValue));
       setSortBy(newValue);
       setPostsLoading(false);
-
-      if (page !== 1) {
-        setPage(1);
-      }
+      if (page !== 1) setPage(1);
     } catch (err) {
       setPostsLoading(false);
       dispatch(notify(getErrorMsg(err), 'error'));
@@ -152,158 +130,172 @@ const SubPage = () => {
     try {
       setLoadingMore(true);
       await dispatch(loadSubPosts(sub, sortBy, page + 1));
-      setPage((prevState) => prevState + 1);
+      setPage((prev) => prev + 1);
       setLoadingMore(false);
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
     }
   };
 
+  const joinedDate = String(new Date(createdAt)).split(' ').slice(1, 4).join(' ');
+
   return (
-    <Container disableGutters>
-      <Paper variant="outlined" className={classes.mainPaper}>
-        <Paper variant="outlined" className={classes.subInfoWrapper}>
-          <div className={classes.firstPanel}>
-            <Typography variant="h6" color="secondary">
-              r/{subredditName}
-            </Typography>
-            <div className={classes.description}>
-              {!editOpen ? (
-                <Typography variant="body1">{description}</Typography>
-              ) : (
-                <div className={classes.inputDiv}>
-                  <TextField
-                    multiline
-                    required
-                    fullWidth
-                    rows={2}
-                    rowsMax={Infinity}
-                    value={descInput}
-                    onChange={(e) => setDescInput(e.target.value)}
-                    variant="outlined"
-                    size="small"
-                  />
-                  <div className={classes.submitBtns}>
-                    <Button
-                      onClick={() => setEditOpen(false)}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      className={classes.cancelBtn}
-                      style={{ padding: '0.2em' }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleEditDescription}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      style={{ padding: '0.2em' }}
-                    >
-                      Update
-                    </Button>
-                  </div>
-                </div>
-              )}
-              {user && user.id === admin.id && !editOpen && (
-                <Button
-                  onClick={() => setEditOpen((prevState) => !prevState)}
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                  style={{ padding: '0.2em', marginLeft: '0.5em' }}
-                  startIcon={<EditIcon />}
-                >
-                  Edit
-                </Button>
-              )}
+    <Paper variant="outlined" className={classes.mainPaper}>
+      {/* ── Community Header ── */}
+      <div className={classes.subInfoWrapper}>
+        <div className={classes.firstPanel}>
+          {/* Community name */}
+          <div className={classes.iconText}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, #FF6314 0%, #FF8A50 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <ForumIcon style={{ color: '#fff', fontSize: 22 }} />
             </div>
-            <Typography
-              variant="body2"
-              className={classes.iconText}
-              color="secondary"
-            >
-              <CakeIcon style={{ marginRight: 5 }} /> Created
-              {' ' +
-                String(new Date(createdAt)).split(' ').slice(1, 4).join(' ')}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="secondary"
-              className={classes.iconText}
-            >
-              <PersonIcon style={{ marginRight: 5 }} />
-              Admin:
-              <Link
-                component={RouterLink}
-                to={`/u/${admin.username}`}
-                style={{ marginLeft: '0.3em' }}
-              >
-                u/{admin.username}
-              </Link>
-            </Typography>
+            <div>
+              <Typography variant="h5" style={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+                r/{subredditName}
+              </Typography>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
+                <Chip
+                  icon={<GroupIcon style={{ fontSize: 12 }} />}
+                  label={`${subscriberCount.toLocaleString()} members`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  style={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
+                />
+                <Typography
+                  variant="caption"
+                  style={{ color: theme.palette.text.secondary, display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <CakeIcon style={{ fontSize: 13 }} /> Created {joinedDate}
+                </Typography>
+              </div>
+            </div>
           </div>
-          <div className={classes.secondPanel}>
-            {user && (
-              <Button
-                color="primary"
-                variant="contained"
-                startIcon={isSubscribed ? <CheckIcon /> : <AddIcon />}
-                className={classes.joinBtn}
-                onClick={handleSubJoin}
-              >
-                {isSubscribed ? 'Subscribed' : 'Subscribe'}
-              </Button>
+
+          {/* Description */}
+          <div className={classes.description} style={{ marginTop: 10 }}>
+            {!editOpen ? (
+              <>
+                <Typography
+                  variant="body2"
+                  style={{ color: theme.palette.text.secondary, lineHeight: 1.6 }}
+                >
+                  {description || 'No description yet.'}
+                </Typography>
+                {user && user.id === admin.id && (
+                  <Button
+                    onClick={() => setEditOpen(true)}
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<EditIcon style={{ fontSize: 13 }} />}
+                    style={{ padding: '2px 10px', fontSize: '0.75rem' }}
+                  >
+                    Edit
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className={classes.inputDiv} style={{ width: '100%' }}>
+                <TextField
+                  multiline
+                  required
+                  fullWidth
+                  rows={2}
+                  rowsMax={Infinity}
+                  value={descInput}
+                  onChange={(e) => setDescInput(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                />
+                <div className={classes.submitBtns}>
+                  <Button onClick={() => setEditOpen(false)} color="primary" variant="outlined" size="small">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleEditDescription} color="primary" variant="contained" size="small">
+                    Update
+                  </Button>
+                </div>
+              </div>
             )}
-            <Typography
-              variant="body2"
-              color="primary"
-              className={classes.iconText}
-            >
-              <GroupIcon style={{ marginRight: 5 }} />
-              {subscriberCount} subscribers
-            </Typography>
           </div>
-        </Paper>
+
+          {/* Admin */}
+          <Typography
+            variant="caption"
+            style={{ color: theme.palette.text.secondary, marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <PersonIcon style={{ fontSize: 13 }} />
+            <span>Admin:</span>
+            <Link
+              component={RouterLink}
+              to={`/u/${admin.username}`}
+              style={{ color: theme.palette.primary.main, fontWeight: 700 }}
+            >
+              u/{admin.username}
+            </Link>
+          </Typography>
+        </div>
+
+        {/* Right panel */}
+        <div className={classes.secondPanel}>
+          {user && (
+            <Button
+              color="primary"
+              variant={isSubscribed ? 'outlined' : 'contained'}
+              startIcon={isSubscribed ? <CheckIcon style={{ fontSize: 14 }} /> : <AddIcon style={{ fontSize: 14 }} />}
+              className={classes.joinBtn}
+              onClick={handleSubJoin}
+              size="small"
+            >
+              {isSubscribed ? 'Joined' : 'Join'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Posts ── */}
+      <div style={{ padding: '0 12px' }}>
         <PostFormModal fromSubreddit={{ subredditName, id }} />
         <SortTabBar sortBy={sortBy} handleTabChange={handleTabChange} />
+
         {postsLoading ? (
-          <LoadingSpinner text={'Fetching subreddit posts...'} />
+          <LoadingSpinner text="Loading posts..." />
         ) : (
           <>
-            <div>
-              {subPage.posts.results.length !== 0 ? (
-                subPage.posts.results.map((p) => (
-                  <PostCard
-                    key={p.id}
-                    post={p}
-                    toggleUpvote={toggleUpvote}
-                    toggleDownvote={toggleDownvote}
-                  />
-                ))
-              ) : (
-                <div className={classes.noPosts}>
-                  <PostAddIcon color="primary" fontSize="large" />
-                  <Typography variant="h5" color="secondary">
-                    No Posts Yet
-                  </Typography>
-                  <Typography variant="h6" color="secondary">
-                    Be the first one to post in r/{subredditName}!
-                  </Typography>
-                </div>
-              )}
-            </div>
+            {subPage.posts.results.length !== 0 ? (
+              subPage.posts.results.map((p) => (
+                <PostCard key={p.id} post={p} toggleUpvote={toggleUpvote} toggleDownvote={toggleDownvote} />
+              ))
+            ) : (
+              <div className={classes.noPosts}>
+                <PostAddIcon style={{ fontSize: '3rem', opacity: 0.3, marginBottom: 12 }} />
+                <Typography variant="h6" style={{ fontWeight: 700 }}>
+                  No posts yet
+                </Typography>
+                <Typography variant="body2" style={{ opacity: 0.6, marginTop: 4 }}>
+                  Be the first one to post in r/{subredditName}!
+                </Typography>
+              </div>
+            )}
             {'next' in subPage.posts && (
-              <LoadMoreButton
-                handleLoadPosts={handleLoadPosts}
-                loading={loadingMore}
-              />
+              <LoadMoreButton handleLoadPosts={handleLoadPosts} loading={loadingMore} />
             )}
           </>
         )}
-      </Paper>
-    </Container>
+      </div>
+    </Paper>
   );
 };
 

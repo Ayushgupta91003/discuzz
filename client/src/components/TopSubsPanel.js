@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toggleSubscribe } from '../reducers/subReducer';
 import { notify } from '../reducers/notificationReducer';
 import SubFormModal from './SubFormModal';
-import LoadingSpinner from './LoadingSpinner';
+import { SidebarSkeleton } from './LoadingSpinner';
 import getErrorMsg from '../utils/getErrorMsg';
 import storageService from '../utils/localStorage';
 
@@ -18,9 +18,10 @@ import {
 } from '@material-ui/core';
 import { useSubPanelStyles } from '../styles/muiStyles';
 import { useTheme } from '@material-ui/core/styles';
-import AddIcon from '@material-ui/icons/Add';
-import CheckIcon from '@material-ui/icons/Check';
 import WhatshotIcon from '@material-ui/icons/Whatshot';
+import GroupAddIcon from '@material-ui/icons/GroupAdd';
+import CheckIcon from '@material-ui/icons/Check';
+import AddIcon from '@material-ui/icons/Add';
 
 const TopSubsPanel = () => {
   const { subs, user } = useSelector((state) => state);
@@ -29,115 +30,116 @@ const TopSubsPanel = () => {
   const theme = useTheme();
   const isNotDesktop = useMediaQuery(theme.breakpoints.down('md'));
 
-  if (isNotDesktop) {
-    return null;
-  }
+  if (isNotDesktop) return null;
 
   const loggedUser = storageService.loadUser() || user;
-
   const loadingSubs = !subs || !subs.topSubs;
 
-  const isSubscribed = (subscribedBy, user) => {
-    return subscribedBy.includes(user.id);
-  };
+  const isSubscribed = (subscribedBy) => user && subscribedBy.includes(user.id);
 
-  const handleJoinSub = async (id, subscribedBy, subredditName) => {
+  const handleJoin = async (id, subscribedBy, subredditName) => {
     try {
-      let updatedSubscribedBy;
-      if (subscribedBy.includes(user.id)) {
-        updatedSubscribedBy = subscribedBy.filter((s) => s !== user.id);
-      } else {
-        updatedSubscribedBy = [...subscribedBy, user.id];
-      }
+      const updatedSubscribedBy = subscribedBy.includes(user.id)
+        ? subscribedBy.filter((s) => s !== user.id)
+        : [...subscribedBy, user.id];
+
       dispatch(toggleSubscribe(id, updatedSubscribedBy));
-      const message = subscribedBy.includes(user.id)
-        ? `Unsubscribed from r/${subredditName}`
-        : `Subscribed to r/${subredditName}!`;
-      dispatch(notify(message, 'success'));
+      dispatch(
+        notify(
+          subscribedBy.includes(user.id)
+            ? `Left r/${subredditName}`
+            : `Joined r/${subredditName}!`,
+          'success'
+        )
+      );
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
     }
   };
 
+  if (loadingSubs) return <SidebarSkeleton />;
+
   return (
     <Paper variant="outlined" className={classes.mainPaper}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-        <WhatshotIcon style={{ fontSize: 16, color: theme.palette.primary.main }} />
-        <Typography
-          variant="overline"
-          className={classes.title}
-          style={{ marginBottom: 0 }}
-        >
-          Top Communities
-        </Typography>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+        <WhatshotIcon style={{ fontSize: 15, color: theme.palette.primary.main }} />
+        <Typography className={classes.title}>Top Communities</Typography>
       </div>
-      <Divider style={{ marginBottom: 12 }} />
+      <Divider style={{ marginBottom: 10 }} />
 
-      {loadingSubs ? (
-        <LoadingSpinner text="Loading..." />
-      ) : (
-        <div className={classes.listPaper}>
-          {subs.topSubs.map((s, i) => (
-            <div key={s.id} className={classes.listWrapper}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                <Typography
-                  variant="caption"
-                  style={{
-                    fontWeight: 700,
-                    color: theme.palette.text.secondary,
-                    minWidth: 18,
-                  }}
-                >
-                  {i + 1}
-                </Typography>
+      {/* List */}
+      <div className={classes.listPaper}>
+        {subs.topSubs.map((s, i) => (
+          <div key={s.id} className={classes.listWrapper}>
+            {/* Rank + Name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+              <Typography
+                variant="caption"
+                style={{
+                  fontWeight: 800,
+                  color: theme.palette.text.disabled,
+                  minWidth: 16,
+                  fontSize: '0.7rem',
+                }}
+              >
+                {i + 1}
+              </Typography>
+              <div style={{ minWidth: 0 }}>
                 <Typography variant="body2" className={classes.listItem} noWrap>
                   <Link
                     component={RouterLink}
                     to={`/r/${s.subredditName}`}
-                    color="primary"
-                    style={{ fontWeight: 600 }}
+                    style={{ fontWeight: 700, color: theme.palette.primary.main }}
                   >
                     r/{s.subredditName}
                   </Link>
-                  <br />
-                  <Typography
-                    variant="caption"
-                    style={{ color: theme.palette.text.secondary }}
-                  >
-                    {s.subscriberCount.toLocaleString()} members
-                  </Typography>
+                </Typography>
+                <Typography
+                  variant="caption"
+                  style={{ color: theme.palette.text.secondary, fontSize: '0.72rem' }}
+                >
+                  {s.subscriberCount.toLocaleString()} members
                 </Typography>
               </div>
-              {loggedUser && user && (
-                <Button
-                  variant={isSubscribed(s.subscribedBy, user) ? 'outlined' : 'contained'}
-                  color="primary"
-                  size="small"
-                  style={{ minWidth: 64, borderRadius: 20, flexShrink: 0 }}
-                  startIcon={
-                    isSubscribed(s.subscribedBy, user) ? (
-                      <CheckIcon style={{ fontSize: 12 }} />
-                    ) : (
-                      <AddIcon style={{ fontSize: 12 }} />
-                    )
-                  }
-                  onClick={() =>
-                    handleJoinSub(s.id, s.subscribedBy, s.subredditName)
-                  }
-                >
-                  {isSubscribed(s.subscribedBy, user) ? 'Joined' : 'Join'}
-                </Button>
-              )}
             </div>
-          ))}
-        </div>
-      )}
 
+            {/* Join / Leave button */}
+            {loggedUser && user && (
+              <Button
+                variant={isSubscribed(s.subscribedBy) ? 'outlined' : 'contained'}
+                color="primary"
+                size="small"
+                style={{ minWidth: 60, flexShrink: 0, fontSize: '0.72rem', padding: '3px 10px' }}
+                startIcon={
+                  isSubscribed(s.subscribedBy)
+                    ? <CheckIcon style={{ fontSize: 11 }} />
+                    : <AddIcon style={{ fontSize: 11 }} />
+                }
+                onClick={() => handleJoin(s.id, s.subscribedBy, s.subredditName)}
+              >
+                {isSubscribed(s.subscribedBy) ? 'Joined' : 'Join'}
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Create Community */}
       {loggedUser && (
-        <div style={{ marginTop: 12 }}>
-          <Divider style={{ marginBottom: 12 }} />
+        <>
+          <Divider style={{ margin: '12px 0 10px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <GroupAddIcon style={{ fontSize: 14, color: theme.palette.text.secondary }} />
+            <Typography
+              variant="caption"
+              style={{ color: theme.palette.text.secondary, fontWeight: 600, fontSize: '0.72rem' }}
+            >
+              Create your own community
+            </Typography>
+          </div>
           <SubFormModal />
-        </div>
+        </>
       )}
     </Paper>
   );

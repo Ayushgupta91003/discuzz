@@ -14,35 +14,25 @@ import { notify } from '../reducers/notificationReducer';
 import TimeAgo from 'timeago-react';
 import getErrorMsg from '../utils/getErrorMsg';
 
-import { Typography, Link } from '@material-ui/core';
+import { Typography, Link, useMediaQuery } from '@material-ui/core';
 import { usePostCommentsStyles } from '../styles/muiStyles';
+import { useTheme } from '@material-ui/core/styles';
 import ForumIcon from '@material-ui/icons/Forum';
 
 const CommentsDisplay = ({ comments, postId, isMobile }) => {
   const classes = usePostCommentsStyles();
+  const theme = useTheme();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user);
+  const { darkMode } = useSelector((state) => state);
 
   const handleCommentUpvote = async (commentId) => {
     const { upvotedBy, downvotedBy } = comments.find((c) => c.id === commentId);
-
     try {
       if (upvotedBy.includes(user.id)) {
-        const updatedUpvotedBy = upvotedBy.filter((u) => u !== user.id);
-        dispatch(
-          toggleCommentUpvote(postId, commentId, updatedUpvotedBy, downvotedBy)
-        );
+        dispatch(toggleCommentUpvote(postId, commentId, upvotedBy.filter((u) => u !== user.id), downvotedBy));
       } else {
-        const updatedUpvotedBy = [...upvotedBy, user.id];
-        const updatedDownvotedBy = downvotedBy.filter((d) => d !== user.id);
-        dispatch(
-          toggleCommentUpvote(
-            postId,
-            commentId,
-            updatedUpvotedBy,
-            updatedDownvotedBy
-          )
-        );
+        dispatch(toggleCommentUpvote(postId, commentId, [...upvotedBy, user.id], downvotedBy.filter((d) => d !== user.id)));
       }
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
@@ -51,29 +41,11 @@ const CommentsDisplay = ({ comments, postId, isMobile }) => {
 
   const handleCommentDownvote = async (commentId) => {
     const { upvotedBy, downvotedBy } = comments.find((c) => c.id === commentId);
-
     try {
       if (downvotedBy.includes(user.id)) {
-        const updatedDownvotedBy = downvotedBy.filter((d) => d !== user.id);
-        dispatch(
-          toggleCommentDownvote(
-            postId,
-            commentId,
-            updatedDownvotedBy,
-            upvotedBy
-          )
-        );
+        dispatch(toggleCommentDownvote(postId, commentId, downvotedBy.filter((d) => d !== user.id), upvotedBy));
       } else {
-        const updatedDownvotedBy = [...downvotedBy, user.id];
-        const updatedUpvotedBy = upvotedBy.filter((u) => u !== user.id);
-        dispatch(
-          toggleCommentDownvote(
-            postId,
-            commentId,
-            updatedDownvotedBy,
-            updatedUpvotedBy
-          )
-        );
+        dispatch(toggleCommentDownvote(postId, commentId, [...downvotedBy, user.id], upvotedBy.filter((u) => u !== user.id)));
       }
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
@@ -81,35 +53,14 @@ const CommentsDisplay = ({ comments, postId, isMobile }) => {
   };
 
   const handleReplyUpvote = async (commentId, replyId) => {
-    const targetComment = comments.find((c) => c.id === commentId);
-    const { upvotedBy, downvotedBy } = targetComment.replies.find(
-      (r) => r.id === replyId
-    );
-
+    const { upvotedBy, downvotedBy } = comments
+      .find((c) => c.id === commentId)
+      .replies.find((r) => r.id === replyId);
     try {
       if (upvotedBy.includes(user.id)) {
-        const updatedUpvotedBy = upvotedBy.filter((u) => u !== user.id);
-        dispatch(
-          toggleReplyUpvote(
-            postId,
-            commentId,
-            replyId,
-            updatedUpvotedBy,
-            downvotedBy
-          )
-        );
+        dispatch(toggleReplyUpvote(postId, commentId, replyId, upvotedBy.filter((u) => u !== user.id), downvotedBy));
       } else {
-        const updatedUpvotedBy = [...upvotedBy, user.id];
-        const updatedDownvotedBy = downvotedBy.filter((d) => d !== user.id);
-        dispatch(
-          toggleReplyUpvote(
-            postId,
-            commentId,
-            replyId,
-            updatedUpvotedBy,
-            updatedDownvotedBy
-          )
-        );
+        dispatch(toggleReplyUpvote(postId, commentId, replyId, [...upvotedBy, user.id], downvotedBy.filter((d) => d !== user.id)));
       }
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
@@ -117,129 +68,178 @@ const CommentsDisplay = ({ comments, postId, isMobile }) => {
   };
 
   const handleReplyDownvote = async (commentId, replyId) => {
-    const targetComment = comments.find((c) => c.id === commentId);
-    const { upvotedBy, downvotedBy } = targetComment.replies.find(
-      (r) => r.id === replyId
-    );
-
+    const { upvotedBy, downvotedBy } = comments
+      .find((c) => c.id === commentId)
+      .replies.find((r) => r.id === replyId);
     try {
       if (downvotedBy.includes(user.id)) {
-        const updatedDownvotedBy = downvotedBy.filter((d) => d !== user.id);
-        dispatch(
-          toggleReplyDownvote(
-            postId,
-            commentId,
-            replyId,
-            updatedDownvotedBy,
-            upvotedBy
-          )
-        );
+        dispatch(toggleReplyDownvote(postId, commentId, replyId, downvotedBy.filter((d) => d !== user.id), upvotedBy));
       } else {
-        const updatedDownvotedBy = [...downvotedBy, user.id];
-        const updatedUpvotedBy = upvotedBy.filter((u) => u !== user.id);
-        dispatch(
-          toggleReplyDownvote(
-            postId,
-            commentId,
-            replyId,
-            updatedDownvotedBy,
-            updatedUpvotedBy
-          )
-        );
+        dispatch(toggleReplyDownvote(postId, commentId, replyId, [...downvotedBy, user.id], upvotedBy.filter((u) => u !== user.id)));
       }
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
     }
   };
 
-  const commentDetails = (by, comment) => {
+  if (!comments || comments.length === 0) {
     return (
-      <>
-        <Typography variant="caption">
-          <Link component={RouterLink} to={`/u/${by.username}`}>
-            {by.username}
-          </Link>
-          {` ${comment.pointsCount} ${
-            comment.pointsCount === 1 ? 'point' : 'points'
-          } • `}
-          <TimeAgo datetime={new Date(comment.createdAt)} />
-          {comment.createdAt !== comment.updatedAt && (
-            <em>
-              {' • edited'} <TimeAgo datetime={new Date(comment.updatedAt)} />
-            </em>
-          )}
+      <div className={classes.noCommentsBanner}>
+        <ForumIcon style={{ fontSize: '3rem', marginBottom: 12, opacity: 0.3 }} />
+        <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 6 }}>
+          No comments yet
         </Typography>
-      </>
+        <Typography variant="body2" style={{ opacity: 0.6 }}>
+          Be the first to share your thoughts!
+        </Typography>
+      </div>
     );
-  };
+  }
+
+  const commentVoteColor = (upvotedBy, downvotedBy) =>
+    user && upvotedBy.includes(user.id)
+      ? '#FF6314'
+      : user && downvotedBy.includes(user.id)
+      ? '#818cf8'
+      : theme.palette.text.secondary;
 
   return (
     <div className={classes.commentsContainer}>
-      {comments.length !== 0 ? (
-        comments.map((c) => (
-          <div key={c.id} className={classes.wholeComment}>
-            <div className={classes.commentWrapper}>
-              <div className={classes.commentVotesWrapper}>
-                <UpvoteButton
-                  user={user}
-                  body={c}
-                  handleUpvote={() => handleCommentUpvote(c.id)}
-                />
-                <DownvoteButton
-                  user={user}
-                  body={c}
-                  handleDownvote={() => handleCommentDownvote(c.id)}
-                />
-              </div>
-              <div className={classes.commentDetails}>
-                {commentDetails(c.commentedBy, c)}
-                <CommentsAndButtons
-                  isMobile={isMobile}
-                  comment={c}
-                  postId={postId}
-                  user={user}
-                />
-              </div>
+      {comments.map((comment) => (
+        <div key={comment.id} className={classes.wholeComment}>
+          {/* ── Comment ── */}
+          <div className={classes.commentWrapper}>
+            {/* Vote column */}
+            <div className={classes.commentVotesWrapper}>
+              <UpvoteButton
+                user={user}
+                body={comment}
+                handleUpvote={() => handleCommentUpvote(comment.id)}
+                size="small"
+              />
+              <Typography
+                variant="caption"
+                style={{
+                  color: commentVoteColor(comment.upvotedBy, comment.downvotedBy),
+                  fontWeight: 800,
+                  fontSize: '0.7rem',
+                  lineHeight: 1,
+                  margin: '1px 0',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {comment.pointsCount}
+              </Typography>
+              <DownvoteButton
+                user={user}
+                body={comment}
+                handleDownvote={() => handleCommentDownvote(comment.id)}
+                size="small"
+              />
             </div>
-            {c.replies.map((r) => (
-              <div key={r.id} className={classes.replyWrapper}>
-                <div className={classes.commentVotesWrapper}>
-                  <UpvoteButton
-                    user={user}
-                    body={r}
-                    handleUpvote={() => handleReplyUpvote(c.id, r.id)}
-                  />
-                  <DownvoteButton
-                    user={user}
-                    body={r}
-                    handleDownvote={() => handleReplyDownvote(c.id, r.id)}
-                  />
-                </div>
-                <div className={classes.commentDetails}>
-                  {commentDetails(r.repliedBy, r)}
-                  <ReplyAndButtons
-                    isMobile={isMobile}
-                    reply={r}
-                    postId={postId}
-                    commentId={c.id}
-                    user={user}
-                  />
-                </div>
-              </div>
-            ))}
+
+            {/* Comment content */}
+            <div className={classes.commentDetails}>
+              <Typography
+                variant="caption"
+                style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Link
+                  component={RouterLink}
+                  to={`/u/${comment.commentedBy.username}`}
+                  style={{ fontWeight: 700, color: theme.palette.primary.main }}
+                >
+                  u/{comment.commentedBy.username}
+                </Link>
+                <span style={{ color: theme.palette.text.secondary }}>·</span>
+                <TimeAgo
+                  datetime={new Date(comment.createdAt)}
+                  style={{ color: theme.palette.text.secondary }}
+                />
+                {comment.createdAt !== comment.updatedAt && (
+                  <em style={{ color: theme.palette.text.disabled, fontSize: '0.7rem' }}>
+                    · edited
+                  </em>
+                )}
+              </Typography>
+
+              <CommentsAndButtons
+                isMobile={isMobile}
+                comment={comment}
+                postId={postId}
+                user={user}
+              />
+            </div>
           </div>
-        ))
-      ) : (
-        <div className={classes.noCommentsBanner}>
-          <ForumIcon color="primary" fontSize="large" />
-          <Typography variant="h5" color="secondary">
-            No Comments Yet
-          </Typography>
-          <Typography variant="h6" color="secondary">
-            Be the first to share what you think!
-          </Typography>
+
+          {/* ── Replies ── */}
+          {comment.replies && comment.replies.length > 0 && (
+            <div className={classes.replyWrapper}>
+              {comment.replies.map((reply) => (
+                <div key={reply.id} className={classes.commentWrapper}>
+                  {/* Reply vote column */}
+                  <div className={classes.commentVotesWrapper}>
+                    <UpvoteButton
+                      user={user}
+                      body={reply}
+                      handleUpvote={() => handleReplyUpvote(comment.id, reply.id)}
+                      size="small"
+                    />
+                    <Typography
+                      variant="caption"
+                      style={{
+                        color: commentVoteColor(reply.upvotedBy, reply.downvotedBy),
+                        fontWeight: 800,
+                        fontSize: '0.7rem',
+                        lineHeight: 1,
+                        margin: '1px 0',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {reply.pointsCount}
+                    </Typography>
+                    <DownvoteButton
+                      user={user}
+                      body={reply}
+                      handleDownvote={() => handleReplyDownvote(comment.id, reply.id)}
+                      size="small"
+                    />
+                  </div>
+
+                  {/* Reply content */}
+                  <div className={classes.commentDetails}>
+                    <Typography
+                      variant="caption"
+                      style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Link
+                        component={RouterLink}
+                        to={`/u/${reply.repliedBy.username}`}
+                        style={{ fontWeight: 700, color: theme.palette.primary.main }}
+                      >
+                        u/{reply.repliedBy.username}
+                      </Link>
+                      <span style={{ color: theme.palette.text.secondary }}>·</span>
+                      <TimeAgo
+                        datetime={new Date(reply.createdAt)}
+                        style={{ color: theme.palette.text.secondary }}
+                      />
+                    </Typography>
+
+                    <ReplyAndButtons
+                      isMobile={isMobile}
+                      reply={reply}
+                      comment={comment}
+                      postId={postId}
+                      user={user}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 };

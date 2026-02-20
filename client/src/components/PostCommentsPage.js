@@ -19,25 +19,26 @@ import { trimLink, prettifyLink, fixUrl } from '../utils/formatUrl';
 import getErrorMsg from '../utils/getErrorMsg';
 import parse from 'html-react-parser';
 
-import {
-  Paper,
-  useMediaQuery,
-  Typography,
-  Link,
-  Divider,
-} from '@material-ui/core';
+import { Paper, Typography, Link, Divider, useMediaQuery, Chip } from '@material-ui/core';
 import { usePostCommentsStyles } from '../styles/muiStyles';
 import { useTheme } from '@material-ui/core/styles';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import CommentIcon from '@material-ui/icons/Comment';
+import ImageIcon from '@material-ui/icons/Image';
+import LinkIcon from '@material-ui/icons/Link';
+import SubjectIcon from '@material-ui/icons/Subject';
 
 const PostCommentsPage = () => {
   const { id: postId } = useParams();
   const post = useSelector((state) => state.postComments);
-  const { user, darkMode } = useSelector((state) => state);
+  const { user } = useSelector((state) => state);
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState(null);
   const dispatch = useDispatch();
+
+  const classes = usePostCommentsStyles();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('xs'));
 
   useEffect(() => {
     const getComments = async () => {
@@ -52,10 +53,6 @@ const PostCommentsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
-  const classes = usePostCommentsStyles();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('xs'));
-
   if (pageError) {
     return (
       <Paper variant="outlined" className={classes.mainPaper}>
@@ -67,7 +64,7 @@ const PostCommentsPage = () => {
   if (!post || pageLoading) {
     return (
       <Paper variant="outlined" className={classes.mainPaper}>
-        <LoadingSpinner text={'Fetching post comments...'} />
+        <LoadingSpinner text="Fetching post..." />
       </Paper>
     );
   }
@@ -96,12 +93,9 @@ const PostCommentsPage = () => {
   const handleUpvoteToggle = async () => {
     try {
       if (isUpvoted) {
-        const updatedUpvotedBy = upvotedBy.filter((u) => u !== user.id);
-        dispatch(toggleUpvote(id, updatedUpvotedBy, downvotedBy));
+        dispatch(toggleUpvote(id, upvotedBy.filter((u) => u !== user.id), downvotedBy));
       } else {
-        const updatedUpvotedBy = [...upvotedBy, user.id];
-        const updatedDownvotedBy = downvotedBy.filter((d) => d !== user.id);
-        dispatch(toggleUpvote(id, updatedUpvotedBy, updatedDownvotedBy));
+        dispatch(toggleUpvote(id, [...upvotedBy, user.id], downvotedBy.filter((d) => d !== user.id)));
       }
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
@@ -111,108 +105,123 @@ const PostCommentsPage = () => {
   const handleDownvoteToggle = async () => {
     try {
       if (isDownvoted) {
-        const updatedDownvotedBy = downvotedBy.filter((d) => d !== user.id);
-        dispatch(toggleDownvote(id, updatedDownvotedBy, upvotedBy));
+        dispatch(toggleDownvote(id, downvotedBy.filter((d) => d !== user.id), upvotedBy));
       } else {
-        const updatedDownvotedBy = [...downvotedBy, user.id];
-        const updatedUpvotedBy = upvotedBy.filter((u) => u !== user.id);
-        dispatch(toggleDownvote(id, updatedDownvotedBy, updatedUpvotedBy));
+        dispatch(toggleDownvote(id, [...downvotedBy, user.id], upvotedBy.filter((u) => u !== user.id)));
       }
     } catch (err) {
       dispatch(notify(getErrorMsg(err), 'error'));
     }
   };
 
-  const formattedLink =
-    postType === 'Link' && trimLink(prettifyLink(linkSubmission), 70);
+  const formattedLink = postType === 'Link' && trimLink(prettifyLink(linkSubmission), 70);
+  const voteColor = isUpvoted ? '#FF6314' : isDownvoted ? '#818cf8' : theme.palette.text.secondary;
 
-  const voteColor = isUpvoted ? '#FF6314' : isDownvoted ? '#7B7CFF' : theme.palette.text.secondary;
+  const typeIcon =
+    postType === 'Text' ? <SubjectIcon style={{ fontSize: 13 }} /> :
+    postType === 'Link' ? <LinkIcon style={{ fontSize: 13 }} /> :
+    <ImageIcon style={{ fontSize: 13 }} />;
 
   return (
     <Paper variant="outlined" className={classes.mainPaper}>
       <div className={classes.topPortion}>
+        {/* ── Vote Column ── */}
         <div className={classes.votesWrapper}>
-          <UpvoteButton
-            user={user}
-            body={post}
-            handleUpvote={handleUpvoteToggle}
-            size="small"
-          />
+          <UpvoteButton user={user} body={post} handleUpvote={handleUpvoteToggle} />
           <Typography
             variant="caption"
-            style={{ color: voteColor, fontWeight: 700, fontSize: '0.8rem' }}
+            style={{
+              color: voteColor,
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              lineHeight: 1,
+              margin: '3px 0',
+              fontVariantNumeric: 'tabular-nums',
+            }}
           >
             {pointsCount}
           </Typography>
-          <DownvoteButton
-            user={user}
-            body={post}
-            handleDownvote={handleDownvoteToggle}
-            size="small"
-          />
+          <DownvoteButton user={user} body={post} handleDownvote={handleDownvoteToggle} />
         </div>
+
+        {/* ── Post Details ── */}
         <div className={classes.postDetails}>
-          <Typography variant="caption" style={{ color: theme.palette.text.secondary, marginBottom: 4 }}>
+          {/* Metadata */}
+          <Typography
+            variant="caption"
+            style={{ color: theme.palette.text.secondary, marginBottom: 6, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}
+          >
+            <Chip
+              icon={typeIcon}
+              label={postType}
+              size="small"
+              variant="outlined"
+              style={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }}
+            />
             <Link
               component={RouterLink}
               to={`/r/${subreddit.subredditName}`}
-              color="primary"
-              style={{ fontWeight: 600 }}
+              style={{ color: theme.palette.primary.main, fontWeight: 700 }}
             >
               r/{subreddit.subredditName}
             </Link>
-            {' · '}
-            <span>Posted by </span>
+            <span>·</span>
+            <span>Posted by</span>
             <Link
               component={RouterLink}
               to={`/u/${author.username}`}
-              color="inherit"
+              style={{ color: theme.palette.text.secondary, fontWeight: 600 }}
             >
               u/{author.username}
             </Link>
-            {' · '}
+            <span>·</span>
             <TimeAgo datetime={new Date(createdAt)} />
             {createdAt !== updatedAt && (
-              <em>
-                {' · edited '}<TimeAgo datetime={new Date(updatedAt)} />
+              <em style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                · edited <TimeAgo datetime={new Date(updatedAt)} />
               </em>
             )}
           </Typography>
+
+          {/* Title */}
           <Typography variant="h5" className={classes.title}>
             {title}
           </Typography>
-          {postType === 'Text' ? (
-            <div style={{ lineHeight: 1.7 }}>{parse(textSubmission)}</div>
+
+          {/* Content */}
+          {postType === 'Text' && textSubmission ? (
+            <div
+              className="post-text-content"
+              style={{ lineHeight: 1.75, color: theme.palette.text.primary }}
+            >
+              {parse(textSubmission)}
+            </div>
           ) : postType === 'Image' ? (
             <div className={classes.imagePost}>
-              <a
-                href={imageSubmission.imageLink}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  alt={title}
-                  src={imageSubmission.imageLink}
-                  className={classes.image}
-                />
+              <a href={imageSubmission.imageLink} target="_blank" rel="noopener noreferrer">
+                <img alt={title} src={imageSubmission.imageLink} className={classes.image} />
               </a>
             </div>
-          ) : (
+          ) : postType === 'Link' ? (
             <Link
               href={fixUrl(linkSubmission)}
               target="_blank"
               rel="noopener noreferrer"
               color="primary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.875rem' }}
             >
-              {formattedLink} <OpenInNewIcon style={{ fontSize: 13, verticalAlign: 'middle' }} />
+              {formattedLink}
+              <OpenInNewIcon style={{ fontSize: 13 }} />
             </Link>
-          )}
+          ) : null}
+
+          {/* Action bar */}
           <div className={classes.bottomBar}>
             <div className={classes.bottomButton}>
-              <CommentIcon className={classes.commentIcon} style={{ fontSize: 16 }} />
-              <Typography variant="caption" style={{ fontWeight: 600 }}>
+              <CommentIcon className={classes.commentIcon} />
+              <span>
                 {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
-              </Typography>
+              </span>
             </div>
             {user && user.id === author.id && (
               <EditDeleteMenu
@@ -227,10 +236,13 @@ const PostCommentsPage = () => {
               />
             )}
           </div>
+
+          {/* Comment Input */}
           <CommentInput user={user} postId={id} isMobile={isMobile} />
           <SortCommentsMenu />
         </div>
       </div>
+
       <Divider className={classes.divider} />
       <CommentsDisplay comments={comments} postId={id} isMobile={isMobile} />
     </Paper>

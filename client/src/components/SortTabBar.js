@@ -1,17 +1,24 @@
 import React from 'react';
-import { ReactComponent as Best } from '../svg/best.svg';
-import { ReactComponent as Hot } from '../svg/hot.svg';
-import { ReactComponent as New } from '../svg/new.svg';
-import { ReactComponent as Top } from '../svg/top.svg';
-import { ReactComponent as Controversial } from '../svg/controversial.svg';
-import { ReactComponent as Old } from '../svg/old.svg';
-import { ReactComponent as Subscribed } from '../svg/subscribed.svg';
-
-import { Paper, Tabs, Tab, SvgIcon } from '@material-ui/core';
+import { Paper, Tabs, Tab, useMediaQuery } from '@material-ui/core';
 import { useSortTabStyles } from '../styles/muiStyles';
+import { useTheme } from '@material-ui/core/styles';
+import WhatshotIcon from '@material-ui/icons/Whatshot';
+import FiberNewIcon from '@material-ui/icons/FiberNew';
+import TrendingUpIcon from '@material-ui/icons/TrendingUp';
+import StarIcon from '@material-ui/icons/Star';
+import UpdateIcon from '@material-ui/icons/Update';
+import BookmarkIcon from '@material-ui/icons/Bookmark';
 
 const SortTabBar = ({ sortBy, handleTabChange, subscribedTab, user }) => {
   const classes = useSortTabStyles();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('xs'));
+
+  const tabStyle = {
+    minHeight: 34,
+    fontSize: isMobile ? '0.72rem' : '0.8rem',
+    padding: isMobile ? '4px 6px' : '4px 10px',
+  };
 
   return (
     <Paper variant="outlined" className={classes.mainPaper}>
@@ -20,74 +27,49 @@ const SortTabBar = ({ sortBy, handleTabChange, subscribedTab, user }) => {
         onChange={handleTabChange}
         indicatorColor="primary"
         textColor="primary"
-        variant="scrollable"
+        aria-label="sort posts"
         scrollButtons="auto"
+        variant="scrollable"
+        style={{ minHeight: 40 }}
       >
         <Tab
-          icon={
-            <SvgIcon fontSize="small">
-              <Hot />
-            </SvgIcon>
-          }
-          label="Hot"
+          label={isMobile ? 'Hot' : 'Hot'}
+          icon={<WhatshotIcon style={{ fontSize: '0.95rem' }} />}
           value="hot"
+          style={tabStyle}
         />
-        {subscribedTab && user && (
+        <Tab
+          label={isMobile ? 'New' : 'New'}
+          icon={<FiberNewIcon style={{ fontSize: '0.95rem' }} />}
+          value="new"
+          style={tabStyle}
+        />
+        <Tab
+          label={isMobile ? 'Top' : 'Top'}
+          icon={<TrendingUpIcon style={{ fontSize: '0.95rem' }} />}
+          value="top"
+          style={tabStyle}
+        />
+        <Tab
+          label={isMobile ? 'Best' : 'Best'}
+          icon={<StarIcon style={{ fontSize: '0.95rem' }} />}
+          value="best"
+          style={tabStyle}
+        />
+        <Tab
+          label={isMobile ? 'Old' : 'Old'}
+          icon={<UpdateIcon style={{ fontSize: '0.95rem' }} />}
+          value="old"
+          style={tabStyle}
+        />
+        {user && subscribedTab && (
           <Tab
-            icon={
-              <SvgIcon fontSize="small">
-                <Subscribed />
-              </SvgIcon>
-            }
             label="Subscribed"
+            icon={<BookmarkIcon style={{ fontSize: '0.95rem' }} />}
             value="subscribed"
+            style={tabStyle}
           />
         )}
-        <Tab
-          icon={
-            <SvgIcon fontSize="small">
-              <Best />
-            </SvgIcon>
-          }
-          label="Best"
-          value="best"
-        />
-        <Tab
-          icon={
-            <SvgIcon fontSize="small">
-              <New />
-            </SvgIcon>
-          }
-          label="New"
-          value="new"
-        />
-        <Tab
-          icon={
-            <SvgIcon fontSize="small">
-              <Top />
-            </SvgIcon>
-          }
-          label="Top"
-          value="top"
-        />
-        <Tab
-          icon={
-            <SvgIcon fontSize="small">
-              <Controversial />
-            </SvgIcon>
-          }
-          label="Controversial"
-          value="controversial"
-        />
-        <Tab
-          icon={
-            <SvgIcon fontSize="small">
-              <Old />
-            </SvgIcon>
-          }
-          label="Old"
-          value="old"
-        />
       </Tabs>
     </Paper>
   );

@@ -9,7 +9,7 @@ import TopSubsPanel from './components/TopSubsPanel';
 import SearchResults from './components/SearchResults';
 import NotFoundPage from './components/NotFoundPage';
 
-import { Container } from '@material-ui/core/';
+import { Container } from '@material-ui/core';
 import { useMainPaperStyles } from './styles/muiStyles';
 
 const Routes = () => {
@@ -26,26 +26,31 @@ const Routes = () => {
           <TopSubsPanel />
         </div>
       </Route>
+
       <Route exact path="/comments/:id">
         <Container disableGutters maxWidth="md" style={{ padding: '0 12px' }}>
           <PostCommentsPage />
         </Container>
       </Route>
+
       <Route exact path="/u/:username">
         <Container disableGutters maxWidth="md" style={{ padding: '0 12px' }}>
           <UserPage />
         </Container>
       </Route>
+
       <Route exact path="/r/:sub">
         <Container disableGutters maxWidth="md" style={{ padding: '0 12px' }}>
           <SubPage />
         </Container>
       </Route>
+
       <Route exact path="/search/:query">
         <Container disableGutters maxWidth="md" style={{ padding: '0 12px' }}>
           <SearchResults />
         </Container>
       </Route>
+
       <Route>
         <Container disableGutters maxWidth="md" style={{ padding: '0 12px' }}>
           <NotFoundPage />
